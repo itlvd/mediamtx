@@ -105,7 +105,7 @@ const loadStream = () => {
 	// but don't support fMP4s.
 	// Skip iPad iOS >= 13 and iPhone iOS >= 17,
 	// which support hls.js but don't support well maxLiveSyncPlaybackRate.
-	if (Hls.isSupported() && !isIOS()) {
+	if (Hls.isSupported()) {
 		const hls = new Hls({
 			maxLiveSyncPlaybackRate: 1.5,
 		});
