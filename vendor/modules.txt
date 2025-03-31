@@ -1,4 +1,4 @@
-# code.cloudfoundry.org/bytefmt v0.32.0
+# code.cloudfoundry.org/bytefmt v0.34.0
 ## explicit; go 1.23.0
 code.cloudfoundry.org/bytefmt
 # dario.cat/mergo v1.0.0
@@ -66,7 +66,7 @@ github.com/bluenviron/gohlslib/v2/pkg/codecs
 github.com/bluenviron/gohlslib/v2/pkg/playlist
 github.com/bluenviron/gohlslib/v2/pkg/playlist/primitives
 github.com/bluenviron/gohlslib/v2/pkg/storage
-# github.com/bluenviron/gortsplib/v4 v4.12.4-0.20250218163904-55556f1ecfa2
+# github.com/bluenviron/gortsplib/v4 v4.12.4-0.20250324174248-61372cfa6800
 ## explicit; go 1.21.0
 github.com/bluenviron/gortsplib/v4
 github.com/bluenviron/gortsplib/v4/internal/rtcpreceiver
@@ -99,7 +99,7 @@ github.com/bluenviron/gortsplib/v4/pkg/ringbuffer
 github.com/bluenviron/gortsplib/v4/pkg/rtpreorderer
 github.com/bluenviron/gortsplib/v4/pkg/rtptime
 github.com/bluenviron/gortsplib/v4/pkg/sdp
-# github.com/bluenviron/mediacommon/v2 v2.0.0
+# github.com/bluenviron/mediacommon/v2 v2.0.1-0.20250324151931-b8ce69d15d3d
 ## explicit; go 1.21.0
 github.com/bluenviron/mediacommon/v2/pkg/bits
 github.com/bluenviron/mediacommon/v2/pkg/codecs/ac3
@@ -308,7 +308,7 @@ github.com/goccy/go-json/internal/encoder/vm_color_indent
 github.com/goccy/go-json/internal/encoder/vm_indent
 github.com/goccy/go-json/internal/errors
 github.com/goccy/go-json/internal/runtime
-# github.com/golang-jwt/jwt/v5 v5.2.1
+# github.com/golang-jwt/jwt/v5 v5.2.2
 ## explicit; go 1.18
 github.com/golang-jwt/jwt/v5
 # github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8

@@ -1,6 +1,7 @@
 package gortsplib
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,14 +25,29 @@ func firstFormat(formats map[uint8]*serverStreamFormat) *serverStreamFormat {
 	return formats[firstKey]
 }
 
+// NewServerStream allocates a ServerStream.
+//
+// Deprecated: replaced by ServerStream.Initialize().
+func NewServerStream(s *Server, desc *description.Session) *ServerStream {
+	st := &ServerStream{
+		Server: s,
+		Desc:   desc,
+	}
+	err := st.Initialize()
+	if err != nil {
+		panic(err)
+	}
+	return st
+}
+
 // ServerStream represents a data stream.
 // This is in charge of
 // - distributing the stream to each reader
 // - allocating multicast listeners
 // - gathering infos about the stream in order to generate SSRC and RTP-Info
 type ServerStream struct {
-	s    *Server
-	desc *description.Session
+	Server *Server
+	Desc   *description.Session
 
 	mutex                sync.RWMutex
 	readers              map[*ServerSession]struct{}
@@ -41,17 +57,17 @@ type ServerStream struct {
 	closed               bool
 }
 
-// NewServerStream allocates a ServerStream.
-func NewServerStream(s *Server, desc *description.Session) *ServerStream {
-	st := &ServerStream{
-		s:                    s,
-		desc:                 desc,
-		readers:              make(map[*ServerSession]struct{}),
-		activeUnicastReaders: make(map[*ServerSession]struct{}),
+// Initialize initializes a ServerStream.
+func (st *ServerStream) Initialize() error {
+	if st.Server == nil || st.Server.sessions == nil {
+		return fmt.Errorf("server not present or not initialized")
 	}
 
-	st.medias = make(map[*description.Media]*serverStreamMedia, len(desc.Medias))
-	for i, medi := range desc.Medias {
+	st.readers = make(map[*ServerSession]struct{})
+	st.activeUnicastReaders = make(map[*ServerSession]struct{})
+
+	st.medias = make(map[*description.Media]*serverStreamMedia, len(st.Desc.Medias))
+	for i, medi := range st.Desc.Medias {
 		sm := &serverStreamMedia{
 			st:      st,
 			media:   medi,
@@ -61,7 +77,7 @@ func NewServerStream(s *Server, desc *description.Session) *ServerStream {
 		st.medias[medi] = sm
 	}
 
-	return st
+	return nil
 }
 
 // Close closes a ServerStream.
@@ -91,8 +107,10 @@ func (st *ServerStream) BytesSent() uint64 {
 }
 
 // Description returns the description of the stream.
+//
+// Deprecated: use ServerStream.Desc.
 func (st *ServerStream) Description() *description.Session {
-	return st.desc
+	return st.Desc
 }
 
 // Stats returns stream statistics.
@@ -239,7 +257,7 @@ func (st *ServerStream) readerAdd(
 		if st.multicastReaderCount == 0 {
 			for _, media := range st.medias {
 				mw := &serverMulticastWriter{
-					s: st.s,
+					s: st.Server,
 				}
 				err := mw.initialize()
 				if err != nil {
@@ -316,13 +334,13 @@ func (st *ServerStream) readerSetInactive(ss *ServerSession) {
 
 // WritePacketRTP writes a RTP packet to all the readers of the stream.
 func (st *ServerStream) WritePacketRTP(medi *description.Media, pkt *rtp.Packet) error {
-	return st.WritePacketRTPWithNTP(medi, pkt, st.s.timeNow())
+	return st.WritePacketRTPWithNTP(medi, pkt, st.Server.timeNow())
 }
 
 // WritePacketRTPWithNTP writes a RTP packet to all the readers of the stream.
 // ntp is the absolute time of the packet, and is sent with periodic RTCP sender reports.
 func (st *ServerStream) WritePacketRTPWithNTP(medi *description.Media, pkt *rtp.Packet, ntp time.Time) error {
-	byts := make([]byte, st.s.MaxPacketSize)
+	byts := make([]byte, st.Server.MaxPacketSize)
 	n, err := pkt.MarshalTo(byts)
 	if err != nil {
 		return err
