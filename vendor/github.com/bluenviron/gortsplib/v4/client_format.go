@@ -12,7 +12,6 @@ import (
 	"github.com/bluenviron/gortsplib/v4/internal/rtplossdetector"
 	"github.com/bluenviron/gortsplib/v4/internal/rtpreorderer"
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
-	"github.com/bluenviron/gortsplib/v4/pkg/liberrors"
 )
 
 type clientFormat struct {
@@ -94,7 +93,7 @@ func (cf *clientFormat) stop() {
 func (cf *clientFormat) readPacketRTPUDP(pkt *rtp.Packet) {
 	packets, lost := cf.udpReorderer.Process(pkt)
 	if lost != 0 {
-		cf.onPacketRTPLost(lost)
+		cf.handlePacketsLost(lost)
 		// do not return
 	}
 
@@ -108,7 +107,7 @@ func (cf *clientFormat) readPacketRTPUDP(pkt *rtp.Packet) {
 func (cf *clientFormat) readPacketRTPTCP(pkt *rtp.Packet) {
 	lost := cf.tcpLossDetector.Process(pkt)
 	if lost != 0 {
-		cf.onPacketRTPLost(lost)
+		cf.handlePacketsLost(lost)
 		// do not return
 	}
 
@@ -129,9 +128,9 @@ func (cf *clientFormat) handlePacketRTP(pkt *rtp.Packet, now time.Time) {
 	cf.onPacketRTP(pkt)
 }
 
-func (cf *clientFormat) onPacketRTPLost(lost uint) {
-	atomic.AddUint64(cf.rtpPacketsLost, uint64(lost))
-	cf.cm.c.OnPacketLost(liberrors.ErrClientRTPPacketsLost{Lost: lost})
+func (cf *clientFormat) handlePacketsLost(lost uint64) {
+	atomic.AddUint64(cf.rtpPacketsLost, lost)
+	cf.cm.c.OnPacketsLost(lost)
 }
 
 func (cf *clientFormat) writePacketRTPInQueueUDP(payload []byte) error {

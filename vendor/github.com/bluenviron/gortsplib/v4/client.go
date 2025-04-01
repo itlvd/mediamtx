@@ -217,7 +217,12 @@ type ClientOnResponseFunc func(*base.Response)
 type ClientOnTransportSwitchFunc func(err error)
 
 // ClientOnPacketLostFunc is the prototype of Client.OnPacketLost.
+//
+// Deprecated: replaced by ClientOnPacketsLostFunc
 type ClientOnPacketLostFunc func(err error)
+
+// ClientOnPacketsLostFunc is the prototype of Client.OnPacketsLost.
+type ClientOnPacketsLostFunc func(lost uint64)
 
 // ClientOnDecodeErrorFunc is the prototype of Client.OnDecodeError.
 type ClientOnDecodeErrorFunc func(err error)
@@ -276,9 +281,11 @@ type Client struct {
 	// explicitly request back channels to the server.
 	RequestBackChannels bool
 	// pointer to a variable that stores received bytes.
+	//
 	// Deprecated: use Client.Stats()
 	BytesReceived *uint64
 	// pointer to a variable that stores sent bytes.
+	//
 	// Deprecated: use Client.Stats()
 	BytesSent *uint64
 
@@ -306,7 +313,11 @@ type Client struct {
 	// called when the transport protocol changes.
 	OnTransportSwitch ClientOnTransportSwitchFunc
 	// called when the client detects lost packets.
+	//
+	// Deprecated: replaced by OnPacketsLost
 	OnPacketLost ClientOnPacketLostFunc
+	// called when the client detects lost packets.
+	OnPacketsLost ClientOnPacketsLostFunc
 	// called when a non-fatal decode error occurs.
 	OnDecodeError ClientOnDecodeErrorFunc
 
@@ -423,9 +434,21 @@ func (c *Client) Start(scheme string, host string) error {
 			log.Println(err.Error())
 		}
 	}
-	if c.OnPacketLost == nil {
-		c.OnPacketLost = func(err error) {
-			log.Println(err.Error())
+	if c.OnPacketLost != nil {
+		c.OnPacketsLost = func(lost uint64) {
+			c.OnPacketLost(liberrors.ErrClientRTPPacketsLost{Lost: uint(lost)}) //nolint:staticcheck
+		}
+	}
+	if c.OnPacketsLost == nil {
+		c.OnPacketsLost = func(lost uint64) {
+			log.Printf("%d RTP %s lost",
+				lost,
+				func() string {
+					if lost == 1 {
+						return "packet"
+					}
+					return "packets"
+				}())
 		}
 	}
 	if c.OnDecodeError == nil {
