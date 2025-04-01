@@ -1,6 +1,8 @@
 package fmp4
 
 import (
+	"fmt"
+
 	"github.com/bluenviron/mediacommon/v2/pkg/codecs/av1"
 	"github.com/bluenviron/mediacommon/v2/pkg/codecs/h264"
 	"github.com/bluenviron/mediacommon/v2/pkg/codecs/h265"
@@ -78,7 +80,8 @@ func (ps *PartSample) FillH264(ptsOffset int32, au [][]byte) error {
 	ps.PTSOffset = ptsOffset
 	ps.IsNonSyncSample = !h264.IsRandomAccess(au)
 	ps.Payload = avcc
-
+	fmt.Println("ps.IsNonSyncSample", ps.IsNonSyncSample)
+	fmt.Println("ps.Payload", ps.Payload)
 	return nil
 }
 

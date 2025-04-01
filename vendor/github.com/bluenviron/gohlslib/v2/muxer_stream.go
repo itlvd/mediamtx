@@ -628,7 +628,7 @@ func (s *muxerStream) createFirstSegment(
 			startDTS:           nextDTS,
 			fromForcedRotation: false,
 		}
-		err := seg.initialize()
+		err := seg.initialize() // tạo file seg mới
 		if err != nil {
 			return err
 		}

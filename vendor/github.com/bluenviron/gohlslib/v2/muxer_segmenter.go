@@ -339,7 +339,7 @@ func (s *muxerSegmenter) writeH264(
 		s.pendingParamsChange = false
 		paramsChanged = true
 	}
-
+	// dau segment luon la keyfame
 	// skip samples silently until we find a random access one
 	if !track.firstRandomAccessReceived {
 		if !randomAccess {
@@ -350,6 +350,7 @@ func (s *muxerSegmenter) writeH264(
 		track.h264DTSExtractor = h264.NewDTSExtractor()
 	}
 
+	// truyen vao dau vao la thoi diem fame can duoc hien thi va return ra thoi diem fame can giai ma
 	dts, err := track.h264DTSExtractor.Extract(au, pts)
 	if err != nil {
 		return fmt.Errorf("unable to extract DTS: %w", err)
@@ -393,12 +394,12 @@ func (s *muxerSegmenter) writeH264(
 
 	return s.fmp4WriteSample(
 		track,
-		randomAccess,
+		randomAccess, // chỉ là true khi fame đó là keyframe
 		paramsChanged,
 		&fmp4AugmentedSample{
 			PartSample: *ps,
 			dts:        dts,
-			ntp:        ntp,
+			ntp:        ntp, // thoi gian thực tế của fame trong stream, ví dụ phút thứ 10 giây 30 thì ntp = 10:30:00
 		})
 }
 
@@ -538,7 +539,7 @@ func (s *muxerSegmenter) fmp4WriteSample(
 		return nil
 	}
 	duration := track.fmp4NextSample.dts - sample.dts
-	sample.Duration = uint32(duration)
+	sample.Duration = uint32(duration) // thời gian của 1 fame
 
 	if track.isLeading {
 		// create first segment
@@ -555,11 +556,11 @@ func (s *muxerSegmenter) fmp4WriteSample(
 		}
 	}
 
-	if track.isLeading {
+	if track.isLeading { // dieu chinh thoi gian part
 		s.fmp4AdjustPartDuration(timestampToDuration(duration, track.ClockRate))
 	}
 
-	err := track.stream.nextPart.writeSample(
+	err := track.stream.nextPart.writeSample( // ghi fame vao part
 		track,
 		sample,
 	)
@@ -567,6 +568,7 @@ func (s *muxerSegmenter) fmp4WriteSample(
 		return err
 	}
 
+	// leading track mà dat thoi gian thi se rotate segment hoac part
 	if track.isLeading {
 		// switch segment
 		if randomAccess && (paramsChanged ||
