@@ -485,6 +485,20 @@ func (s *muxerStream) generateMediaPlaylistFMP4(
 		}
 	}
 
+	// Kiểm tra sự thay đổi của duration
+	hasDurationChange := false
+	if len(s.segments) > 0 {
+		lastSeg := s.segments[len(s.segments)-1]
+		if lastSeg.getDuration() != time.Duration(s.targetDuration)*time.Second {
+			hasDurationChange = true
+		}
+	}
+
+	// Thêm tag DISCONTINUITY nếu cần
+	if hasDurationChange && len(pl.Parts) > 0 {
+		pl.Parts[len(pl.Parts)-1].Discontinuity = true
+	}
+
 	for i, sog := range s.segments {
 		if i < skipped {
 			continue
@@ -741,6 +755,10 @@ func (s *muxerStream) rotateParts(
 			s.onEncodeError(fmt.Errorf("part duration changed from %v to %v - this will cause an error in iOS clients",
 				s.partTargetDuration, partTargetDuration))
 			s.partTargetDuration = partTargetDuration
+			// Đánh dấu cần thêm DISCONTINUITY
+			if s.nextPart != nil {
+				s.nextPart.needsDiscontinuity = true
+			}
 		}
 	}
 

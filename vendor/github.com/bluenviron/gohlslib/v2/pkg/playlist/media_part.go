@@ -27,6 +27,13 @@ type MediaPart struct {
 
 	// GAP
 	Gap bool
+
+	// DISCONTINUITY
+	Discontinuity bool
+
+	// PROGRAM-DATE-TIME
+	HasProgramDateTime bool
+	ProgramDateTime    time.Time
 }
 
 func (p *MediaPart) unmarshal(v string) error {
@@ -63,6 +70,18 @@ func (p *MediaPart) unmarshal(v string) error {
 
 		case "GAP":
 			p.Gap = true
+
+		case "DISCONTINUITY":
+			p.Discontinuity = true
+
+		case "PROGRAM-DATE-TIME":
+			p.HasProgramDateTime = true
+			var pd primitives.DateTime
+			err := pd.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			p.ProgramDateTime = time.Time(pd)
 		}
 	}
 
@@ -94,6 +113,14 @@ func (p MediaPart) marshal() string {
 
 	if p.Gap {
 		ret += ",GAP=YES"
+	}
+
+	if p.Discontinuity {
+		ret += ",DISCONTINUITY=YES"
+	}
+
+	if p.HasProgramDateTime {
+		ret += ",PROGRAM-DATE-TIME=" + primitives.DateTime(p.ProgramDateTime).Marshal()
 	}
 
 	ret += "\n"

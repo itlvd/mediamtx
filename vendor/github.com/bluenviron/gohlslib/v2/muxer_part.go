@@ -19,9 +19,10 @@ type muxerPart struct {
 	id             uint64
 	storage        storage.Part
 
-	path          string
-	isIndependent bool
-	endDTS        time.Duration
+	path              string
+	isIndependent     bool
+	endDTS            time.Duration
+	needsDiscontinuity bool
 }
 
 func (p *muxerPart) initialize() {
