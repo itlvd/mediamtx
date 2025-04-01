@@ -11,6 +11,7 @@ import (
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
 	"github.com/pion/rtp"
 
+	"github.com/bluenviron/mediamtx/internal/counterdumper"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/unit"
 )
@@ -30,15 +31,16 @@ type Stream struct {
 	UDPMaxPayloadSize  int
 	Desc               *description.Session
 	GenerateRTPPackets bool
-	DecodeErrLogger    logger.Writer
+	Parent             logger.Writer
 
-	bytesReceived *uint64
-	bytesSent     *uint64
-	streamMedias  map[*description.Media]*streamMedia
-	mutex         sync.RWMutex
-	rtspStream    *gortsplib.ServerStream
-	rtspsStream   *gortsplib.ServerStream
-	streamReaders map[Reader]*streamReader
+	bytesReceived    *uint64
+	bytesSent        *uint64
+	streamMedias     map[*description.Media]*streamMedia
+	mutex            sync.RWMutex
+	rtspStream       *gortsplib.ServerStream
+	rtspsStream      *gortsplib.ServerStream
+	streamReaders    map[Reader]*streamReader
+	processingErrors *counterdumper.CounterDumper
 
 	readerRunning chan struct{}
 }
@@ -51,12 +53,26 @@ func (s *Stream) Initialize() error {
 	s.streamReaders = make(map[Reader]*streamReader)
 	s.readerRunning = make(chan struct{})
 
+	s.processingErrors = &counterdumper.CounterDumper{
+		OnReport: func(val uint64) {
+			s.Parent.Log(logger.Warn, "%d processing %s",
+				val,
+				func() string {
+					if val == 1 {
+						return "error"
+					}
+					return "errors"
+				}())
+		},
+	}
+	s.processingErrors.Start()
+
 	for _, media := range s.Desc.Medias {
 		s.streamMedias[media] = &streamMedia{
-			UDPMaxPayloadSize:  s.UDPMaxPayloadSize,
-			Media:              media,
-			GenerateRTPPackets: s.GenerateRTPPackets,
-			DecodeErrLogger:    s.DecodeErrLogger,
+			udpMaxPayloadSize:  s.UDPMaxPayloadSize,
+			media:              media,
+			generateRTPPackets: s.GenerateRTPPackets,
+			processingErrors:   s.processingErrors,
 		}
 		err := s.streamMedias[media].initialize()
 		if err != nil {
@@ -69,6 +85,8 @@ func (s *Stream) Initialize() error {
 
 // Close closes all resources of the stream.
 func (s *Stream) Close() {
+	s.processingErrors.Stop()
+
 	if s.rtspStream != nil {
 		s.rtspStream.Close()
 	}
